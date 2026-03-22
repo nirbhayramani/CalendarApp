@@ -1,0 +1,21 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="Theme.CalendarApp" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorSecondary">@color/accent</item>
+        <item name="android:statusBarColor">@color/background</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+        <item name="android:navigationBarColor">@color/background</item>
+        <!-- Corrected: API level 27+ for light navigation bar -->
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
+    </style>
+
+    <style name="Widget.CalendarView.Custom" parent="android:Widget.CalendarView">
+        <item name="android:selectedWeekBackgroundColor">@color/accent_light</item>
+        <item name="android:focusedMonthDateColor">@color/text_main</item>
+        <item name="android:unfocusedMonthDateColor">@color/text_hint</item>
+        <item name="android:weekSeparatorLineColor">@android:color/transparent</item>
+        <item name="android:selectedDateVerticalBar">@color/accent</item>
+    </style>
+
+</resources>

@@ -1,0 +1,51 @@
+<resources>
+    <string name="app_name">CalendarApp</string>
+
+    <string name="add_event">Add Event</string>
+    <string name="view_events">View Events</string>
+    <string name="view_all">View All</string>
+
+    <string name="selected_date">Selected Date</string>
+
+    <string name="go_to_today">Go to Today</string>
+    <string name="quick_add_today">Quick Add Today</string>
+    <string name="view_month_events">View Month Events</string>
+    <string name="month_view">Month View</string>
+
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- New Event UI -->
+    <string name="new_event">New Event</string>
+    <string name="edit_event">Edit Event</string>
+    <string name="whats_happening">What\'s happening?</string>
+    <string name="event_title_hint">Event Title</string>
+    <string name="when_label">When?</string>
+    <string name="select_time">Select Time</string>
+    <string name="create_event">Create Event</string>
+    <string name="update_event">Update Event</string>
+
+    <!-- List UI -->
+    <string name="daily_schedule">Daily Schedule</string>
+    <string name="monthly_overview">Monthly Overview</string>
+    <string name="clear_day">Clear Day</string>
+    <string name="enjoy_free_time">Enjoy your free time!</string>
+    <string name="no_events_yet">No events yet</string>
+    <string name="quick_actions">Quick Actions</string>
+
+    <!-- Dialogs/Toasts -->
+    <string name="delete_event_confirm_title">Delete Event</string>
+    <string name="delete_event_confirm_msg">Are you sure you want to remove this event from your schedule?</string>
+    <string name="error_title_required">Title is required</string>
+    <string name="permission_reminder">Please grant permission to set reminders</string>
+    <string name="time_label">Time: %s</string>
+    <string name="schedule_for">Schedule for %s</string>
+    <string name="events_in">Events in %s</string>
+
+    <!-- Custom Calendar -->
+    <string name="select_date">Select Date</string>
+    <string name="enter_year_hint">Enter Year Manually</string>
+    <string name="today">Today</string>
+
+</resources>

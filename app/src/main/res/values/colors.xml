@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Modern Minimalist Palette -->
+    <color name="primary">#1A1A1A</color>
+    <color name="primary_light">#424242</color>
+    <color name="accent">#6366F1</color> <!-- Indigo accent -->
+    <color name="accent_light">#EEF2FF</color>
+
+    <color name="background">#FAFAFA</color>
+    <color name="surface">#FFFFFF</color>
+
+    <color name="text_main">#1F2937</color>
+    <color name="text_secondary">#6B7280</color>
+    <color name="text_hint">#9CA3AF</color>
+
+    <color name="divider">#F3F4F6</color>
+
+    <color name="success">#10B981</color>
+    <color name="error">#EF4444</color>
+    <color name="warning">#F59E0B</color>
+
+    <!-- Pastels for events -->
+    <color name="cat_blue">#DBEAFE</color>
+    <color name="cat_blue_text">#1E40AF</color>
+    <color name="cat_green">#DCFCE7</color>
+    <color name="cat_green_text">#166534</color>
+    <color name="cat_purple">#F3E8FF</color>
+    <color name="cat_purple_text">#6B21A8</color>
+
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+
+    <!-- Legacy support if needed -->
+    <color name="primary_blue">#6366F1</color>
+    <color name="success_green">#10B981</color>
+    <color name="purple">#8B5CF6</color>
+    <color name="gray_900">#111827</color>
+</resources>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:clickable="true"
+    android:focusable="true">
+
+    <View
+        android:id="@+id/selectionBubble"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_gravity="center"
+        android:background="@drawable/bg_date_selection"
+        android:visibility="invisible" />
+
+    <TextView
+        android:id="@+id/dayText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:textColor="@color/text_main"
+        android:textSize="15sp"
+        android:fontFamily="sans-serif-medium"
+        tools:text="15" />
+
+    <View
+        android:id="@+id/eventDot"
+        android:layout_width="4dp"
+        android:layout_height="4dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="6dp"
+        android:background="@drawable/bg_date_selection"
+        android:backgroundTint="@color/text_hint"
+        android:visibility="gone" />
+
+</FrameLayout>
