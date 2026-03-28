@@ -1,15 +1,20 @@
 package com.example.calendarapp;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
@@ -20,7 +25,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -31,7 +35,8 @@ public class MainActivity extends AppCompatActivity {
     private EventViewModel eventViewModel;
     private EventAdapter agendaAdapter;
     private CalendarAdapter calendarAdapter;
-    private final int START_POSITION = 500;
+    private final int START_POSITION = CalendarAdapter.START_POSITION;
+    private boolean isUserScrolling = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,8 +61,7 @@ public class MainActivity extends AppCompatActivity {
             overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
         });
 
-        binding.currentMonthText.setOnClickListener(v -> showMonthSelector());
-        binding.currentYearText.setOnClickListener(v -> showYearSelector());
+        binding.monthHeader.setOnClickListener(v -> showMonthYearSelector());
         
         binding.viewAllBtn.setOnClickListener(v -> {
             Intent intent = new Intent(this, MonthEventsActivity.class);
@@ -65,6 +69,16 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
             overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
         });
+
+        checkNotificationPermission();
+    }
+
+    private void checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
+            }
+        }
     }
 
     private void setupFixedHeader() {
@@ -93,11 +107,19 @@ public class MainActivity extends AppCompatActivity {
 
         binding.calendarViewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
+            public void onPageScrollStateChanged(int state) {
+                super.onPageScrollStateChanged(state);
+                isUserScrolling = (state != ViewPager2.SCROLL_STATE_IDLE);
+            }
+
+            @Override
             public void onPageSelected(int position) {
-                Calendar monthCal = (Calendar) Calendar.getInstance().clone();
-                monthCal.set(Calendar.DAY_OF_MONTH, 1);
-                monthCal.add(Calendar.MONTH, position - START_POSITION);
-                updateCalendarHeaderText(monthCal);
+                if (isUserScrolling) {
+                    Calendar monthCal = Calendar.getInstance();
+                    monthCal.set(Calendar.DAY_OF_MONTH, 1);
+                    monthCal.add(Calendar.MONTH, position - START_POSITION);
+                    updateCalendarHeaderText(monthCal);
+                }
             }
         });
     }
@@ -139,69 +161,42 @@ public class MainActivity extends AppCompatActivity {
         binding.calendarViewPager.setCurrentItem(START_POSITION + monthDiff, true);
     }
 
-    private void showMonthSelector() {
-        View view = LayoutInflater.from(this).inflate(R.layout.dialog_month_selector, null);
-        RecyclerView grid = view.findViewById(R.id.monthGrid);
-        
-        String[] months = {"January", "February", "March", "April", "May", "June", 
-                          "July", "August", "September", "October", "November", "December"};
-        
+    private void showMonthYearSelector() {
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog_month_year_picker, null);
+        TextView yearText = view.findViewById(R.id.selectedYearText);
+        View prevYear = view.findViewById(R.id.prevYear);
+        View nextYear = view.findViewById(R.id.nextYear);
+        RecyclerView monthGrid = view.findViewById(R.id.monthGrid);
+
+        final int[] tempYear = {selectedCalendar.get(Calendar.YEAR)};
+        yearText.setText(String.valueOf(tempYear[0]));
+
         AlertDialog dialog = new MaterialAlertDialogBuilder(this)
-                .setTitle("Select Month")
+                .setTitle("Select Month & Year")
                 .setView(view)
                 .create();
 
-        MonthGridAdapter adapter = new MonthGridAdapter(months, position -> {
+        prevYear.setOnClickListener(v -> {
+            tempYear[0]--;
+            yearText.setText(String.valueOf(tempYear[0]));
+        });
+
+        nextYear.setOnClickListener(v -> {
+            tempYear[0]++;
+            yearText.setText(String.valueOf(tempYear[0]));
+        });
+
+        String[] months = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+        
+        MonthGridAdapter adapter = new MonthGridAdapter(months, selectedCalendar.get(Calendar.MONTH), position -> {
+            selectedCalendar.set(Calendar.YEAR, tempYear[0]);
             selectedCalendar.set(Calendar.MONTH, position);
             navigateToMonth(selectedCalendar);
             updateUI(selectedCalendar);
             dialog.dismiss();
         });
-        grid.setAdapter(adapter);
-        dialog.show();
-    }
-
-    private void showYearSelector() {
-        View view = LayoutInflater.from(this).inflate(R.layout.dialog_year_selector, null);
-        TextView header = view.findViewById(R.id.todayYearHeader);
-        RecyclerView grid = view.findViewById(R.id.yearGrid);
-        View inputLayout = view.findViewById(R.id.yearInputLayout);
-        EditText edit = view.findViewById(R.id.yearEditText);
-
-        int currentYear = Calendar.getInstance().get(Calendar.YEAR);
-        header.setText(String.valueOf(currentYear));
-
-        List<Integer> years = new ArrayList<>();
-        for(int i = currentYear - 50; i <= currentYear + 50; i++) years.add(i);
-
-        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
-                .setTitle("Select Year")
-                .setView(view)
-                .setPositiveButton("Go", (d, w) -> {
-                    if (inputLayout.getVisibility() == View.VISIBLE) {
-                        try {
-                            int y = Integer.parseInt(edit.getText().toString());
-                            selectedCalendar.set(Calendar.YEAR, y);
-                            navigateToMonth(selectedCalendar);
-                            updateUI(selectedCalendar);
-                        } catch (Exception ignored) {}
-                    }
-                })
-                .create();
-
-        header.setOnClickListener(v -> {
-            header.setVisibility(View.GONE);
-            inputLayout.setVisibility(View.VISIBLE);
-            edit.requestFocus();
-        });
-
-        YearGridAdapter adapter = new YearGridAdapter(years, year -> {
-            selectedCalendar.set(Calendar.YEAR, year);
-            navigateToMonth(selectedCalendar);
-            updateUI(selectedCalendar);
-            dialog.dismiss();
-        });
-        grid.setAdapter(adapter);
+        monthGrid.setAdapter(adapter);
         dialog.show();
     }
 
@@ -213,40 +208,38 @@ public class MainActivity extends AppCompatActivity {
         return new SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(calendar.getTime());
     }
 
-    // Temporary adapters for grid selectors
-    private static class MonthGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    private static class MonthGridAdapter extends RecyclerView.Adapter<MonthGridAdapter.ViewHolder> {
         String[] months;
+        int selectedMonth;
         OnItemClickListener listener;
         interface OnItemClickListener { void onClick(int pos); }
-        MonthGridAdapter(String[] m, OnItemClickListener l) { months = m; listener = l; }
-        @Override public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup p, int t) {
-            TextView tv = new TextView(p.getContext());
-            tv.setLayoutParams(new ViewGroup.LayoutParams(-1, 150));
-            tv.setGravity(17);
-            return new RecyclerView.ViewHolder(tv) {};
+        
+        MonthGridAdapter(String[] m, int selected, OnItemClickListener l) { 
+            months = m; 
+            selectedMonth = selected;
+            listener = l; 
         }
-        @Override public void onBindViewHolder(RecyclerView.ViewHolder h, int p) {
-            ((TextView)h.itemView).setText(months[p]);
+        
+        @NonNull @Override public ViewHolder onCreateViewHolder(@NonNull ViewGroup p, int t) {
+            TextView tv = new TextView(p.getContext());
+            tv.setLayoutParams(new ViewGroup.LayoutParams(-1, 120));
+            tv.setGravity(17);
+            tv.setTextSize(16);
+            return new ViewHolder(tv);
+        }
+        @Override public void onBindViewHolder(@NonNull ViewHolder h, int p) {
+            TextView tv = (TextView) h.itemView;
+            tv.setText(months[p]);
+            if (p == selectedMonth) {
+                tv.setTextColor(ContextCompat.getColor(tv.getContext(), R.color.accent));
+                tv.setTypeface(null, android.graphics.Typeface.BOLD);
+            } else {
+                tv.setTextColor(ContextCompat.getColor(tv.getContext(), R.color.text_main));
+                tv.setTypeface(null, android.graphics.Typeface.NORMAL);
+            }
             h.itemView.setOnClickListener(v -> listener.onClick(p));
         }
         @Override public int getItemCount() { return 12; }
-    }
-
-    private static class YearGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-        List<Integer> years;
-        OnYearClickListener listener;
-        interface OnYearClickListener { void onClick(int year); }
-        YearGridAdapter(List<Integer> y, OnYearClickListener l) { years = y; listener = l; }
-        @Override public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup p, int t) {
-            TextView tv = new TextView(p.getContext());
-            tv.setLayoutParams(new ViewGroup.LayoutParams(-1, 150));
-            tv.setGravity(17);
-            return new RecyclerView.ViewHolder(tv) {};
-        }
-        @Override public void onBindViewHolder(RecyclerView.ViewHolder h, int p) {
-            ((TextView)h.itemView).setText(String.valueOf(years.get(p)));
-            h.itemView.setOnClickListener(v -> listener.onClick(years.get(p)));
-        }
-        @Override public int getItemCount() { return years.size(); }
+        static class ViewHolder extends RecyclerView.ViewHolder { ViewHolder(View v) { super(v); } }
     }
 }

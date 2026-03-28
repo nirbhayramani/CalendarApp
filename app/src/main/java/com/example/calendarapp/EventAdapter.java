@@ -2,10 +2,13 @@ package com.example.calendarapp;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.calendarapp.databinding.ItemEventBinding;
@@ -42,12 +45,36 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         holder.binding.timeText.setText(event.time);
         holder.binding.titleText.setText(event.title);
 
+        // Priority visualization
+        int priorityColor;
+        switch (event.priority) {
+            case 2: // High
+                priorityColor = ContextCompat.getColor(context, R.color.error);
+                break;
+            case 1: // Medium
+                priorityColor = ContextCompat.getColor(context, R.color.accent);
+                break;
+            default: // Low
+                priorityColor = ContextCompat.getColor(context, R.color.text_hint);
+                break;
+        }
+        holder.binding.priorityIndicator.setBackgroundTintList(ColorStateList.valueOf(priorityColor));
+
+        // Reminder style icon
+        if (event.reminderType == 1) { // Alarm
+            holder.binding.reminderIcon.setVisibility(View.VISIBLE);
+        } else {
+            holder.binding.reminderIcon.setVisibility(View.GONE);
+        }
+
         holder.binding.editBtn.setOnClickListener(v -> {
             Intent i = new Intent(context, EditEventActivity.class);
             i.putExtra("id", event.id);
             i.putExtra("date", event.date);
             i.putExtra("time", event.time);
             i.putExtra("title", event.title);
+            i.putExtra("priority", event.priority);
+            i.putExtra("reminderType", event.reminderType);
             context.startActivity(i);
             if (context instanceof android.app.Activity) {
                 ((android.app.Activity) context).overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);

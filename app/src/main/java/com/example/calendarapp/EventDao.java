@@ -21,10 +21,10 @@ public interface EventDao {
     @Delete
     void delete(EventModel event);
 
-    @Query("SELECT * FROM events WHERE date = :date ORDER BY time ASC")
+    @Query("SELECT * FROM events WHERE date = :date ORDER BY priority DESC, time ASC")
     LiveData<List<EventModel>> getEventsByDate(String date);
 
-    @Query("SELECT * FROM events WHERE date LIKE :month || '%' ORDER BY date, time ASC")
+    @Query("SELECT * FROM events WHERE date LIKE :month || '%' ORDER BY date, priority DESC, time ASC")
     LiveData<List<EventModel>> getEventsByMonth(String month);
     
     @Query("SELECT * FROM events WHERE id = :id LIMIT 1")

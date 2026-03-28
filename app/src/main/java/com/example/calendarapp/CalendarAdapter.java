@@ -18,7 +18,8 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.MonthV
     private final Context context;
     private final Calendar baseCalendar;
     private final OnDateSelectedListener listener;
-    private static final int START_POSITION = 500;
+    // CRITICAL: This must match START_POSITION in MainActivity to avoid "Time Travel" bugs
+    public static final int START_POSITION = 500000; 
     private Calendar selectedDate;
 
     public interface OnDateSelectedListener {
@@ -54,7 +55,7 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.MonthV
 
     @Override
     public int getItemCount() {
-        return 1000;
+        return 1000000; // Large range for virtual infinite scrolling
     }
 
     class MonthViewHolder extends RecyclerView.ViewHolder {
@@ -70,9 +71,11 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.MonthV
             Calendar temp = (Calendar) monthCal.clone();
             temp.set(Calendar.DAY_OF_MONTH, 1);
             
+            // Calculate padding for start of month
             int firstDayOfWeek = temp.get(Calendar.DAY_OF_WEEK) - 1;
             temp.add(Calendar.DAY_OF_MONTH, -firstDayOfWeek);
 
+            // Fill 6 rows (42 days) to ensure consistent height
             for (int i = 0; i < 42; i++) {
                 days.add((Calendar) temp.clone());
                 temp.add(Calendar.DAY_OF_MONTH, 1);

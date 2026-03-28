@@ -26,6 +26,15 @@
     <string name="create_event">Create Event</string>
     <string name="update_event">Update Event</string>
 
+    <string name="priority_label">Priority</string>
+    <string name="low_priority">Low</string>
+    <string name="medium_priority">Medium</string>
+    <string name="high_priority">High</string>
+
+    <string name="reminder_style_label">Reminder Style</string>
+    <string name="notification_reminder">Notification</string>
+    <string name="alarm_reminder">Alarm</string>
+
     <!-- List UI -->
     <string name="daily_schedule">Daily Schedule</string>
     <string name="monthly_overview">Monthly Overview</string>
