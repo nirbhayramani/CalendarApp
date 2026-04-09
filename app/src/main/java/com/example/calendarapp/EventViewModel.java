@@ -23,8 +23,8 @@ public class EventViewModel extends AndroidViewModel {
         return repository.getEventsByMonth(month);
     }
 
-    public void insert(EventModel event) {
-        repository.insert(event);
+    public void insert(EventModel event, EventRepository.OnEventInsertedCallback callback) {
+        repository.insert(event, callback);
     }
 
     public void update(EventModel event) {
@@ -33,5 +33,9 @@ public class EventViewModel extends AndroidViewModel {
 
     public void delete(EventModel event) {
         repository.delete(event);
+    }
+
+    public List<EventModel> getEventsByDateSync(String date) {
+        return repository.getEventsByDateSync(date);
     }
 }

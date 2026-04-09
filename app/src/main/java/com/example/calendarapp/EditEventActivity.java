@@ -59,21 +59,19 @@ public class EditEventActivity extends AppCompatActivity {
         binding.timeBtn.setText("Time: " + time);
         binding.saveBtn.setText("Update Event");
 
-        // Restore priority selection
         if (priority == 1) binding.priorityGroup.check(R.id.chipMedium);
         else if (priority == 2) binding.priorityGroup.check(R.id.chipHigh);
         else binding.priorityGroup.check(R.id.chipLow);
 
-        // Restore reminder type
         if (reminderType == 1) binding.reminderGroup.check(R.id.btnAlarm);
         else binding.reminderGroup.check(R.id.btnNotification);
 
         binding.timeBtn.setOnClickListener(v -> {
-            Calendar c = Calendar.getInstance();
+            String[] t = time.split(":");
             new TimePickerDialog(this, (view, h, m) -> {
                 time = String.format(Locale.getDefault(), "%02d:%02d", h, m);
                 binding.timeBtn.setText("Time: " + time);
-            }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), false).show();
+            }, Integer.parseInt(t[0]), Integer.parseInt(t[1]), false).show();
         });
 
         binding.saveBtn.setOnClickListener(v -> {
@@ -92,13 +90,13 @@ public class EditEventActivity extends AppCompatActivity {
             EventModel event = new EventModel(id, date, time, updatedTitle, p, r);
             eventViewModel.update(event);
 
-            checkAndScheduleReminder(date, time, updatedTitle, r);
+            checkAndScheduleReminder(event);
             finish();
             overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right);
         });
     }
 
-    private void checkAndScheduleReminder(String date, String time, String title, int type) {
+    private void checkAndScheduleReminder(EventModel event) {
         AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
@@ -108,13 +106,13 @@ public class EditEventActivity extends AppCompatActivity {
                 return;
             }
         }
-        scheduleReminder(date, time, title, type);
+        scheduleReminder(event);
     }
 
-    private void scheduleReminder(String date, String time, String title, int type) {
+    private void scheduleReminder(EventModel event) {
         try {
-            String[] d = date.split("-");
-            String[] t = time.split(":");
+            String[] d = event.date.split("-");
+            String[] t = event.time.split(":");
 
             Calendar cal = Calendar.getInstance();
             cal.set(
@@ -130,14 +128,14 @@ public class EditEventActivity extends AppCompatActivity {
             if (cal.getTimeInMillis() < System.currentTimeMillis()) return;
 
             Intent intent = new Intent(this, AlarmReceiver.class);
-            intent.putExtra("title", title);
-            intent.putExtra("date", date);
-            intent.putExtra("time", time);
-            intent.putExtra("reminderType", type);
+            intent.putExtra("title", event.title);
+            intent.putExtra("date", event.date);
+            intent.putExtra("time", event.time);
+            intent.putExtra("reminderType", event.reminderType);
 
             PendingIntent pi = PendingIntent.getBroadcast(
                     this,
-                    id,
+                    event.id,
                     intent,
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
             );

@@ -93,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupCustomCalendar() {
-        calendarAdapter = new CalendarAdapter(this, selectedCalendar, (calendar, isCurrentMonth) -> {
+        calendarAdapter = new CalendarAdapter(this, selectedCalendar, eventViewModel, (calendar, isCurrentMonth) -> {
             selectedCalendar = (Calendar) calendar.clone();
             if (!isCurrentMonth) {
                 navigateToMonth(selectedCalendar);
@@ -122,6 +122,14 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (calendarAdapter != null) {
+            calendarAdapter.notifyDataSetChanged();
+        }
     }
 
     private void setupAgendaList() {

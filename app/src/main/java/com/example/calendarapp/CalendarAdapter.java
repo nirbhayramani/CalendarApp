@@ -1,6 +1,9 @@
 package com.example.calendarapp;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,25 +15,30 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.MonthViewHolder> {
 
     private final Context context;
     private final Calendar baseCalendar;
     private final OnDateSelectedListener listener;
-    // CRITICAL: This must match START_POSITION in MainActivity to avoid "Time Travel" bugs
+    private final EventViewModel eventViewModel;
     public static final int START_POSITION = 500000; 
     private Calendar selectedDate;
+    private final ExecutorService queryExecutor = Executors.newSingleThreadExecutor();
 
     public interface OnDateSelectedListener {
         void onDateSelected(Calendar calendar, boolean isCurrentMonth);
     }
 
-    public CalendarAdapter(Context context, Calendar selectedDate, OnDateSelectedListener listener) {
+    public CalendarAdapter(Context context, Calendar selectedDate, EventViewModel eventViewModel, OnDateSelectedListener listener) {
         this.context = context;
         this.baseCalendar = (Calendar) Calendar.getInstance().clone();
         this.baseCalendar.set(Calendar.DAY_OF_MONTH, 1);
         this.selectedDate = (Calendar) selectedDate.clone();
+        this.eventViewModel = eventViewModel;
         this.listener = listener;
     }
 
@@ -55,7 +63,7 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.MonthV
 
     @Override
     public int getItemCount() {
-        return 1000000; // Large range for virtual infinite scrolling
+        return 1000000;
     }
 
     class MonthViewHolder extends RecyclerView.ViewHolder {
@@ -71,17 +79,15 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.MonthV
             Calendar temp = (Calendar) monthCal.clone();
             temp.set(Calendar.DAY_OF_MONTH, 1);
             
-            // Calculate padding for start of month
             int firstDayOfWeek = temp.get(Calendar.DAY_OF_WEEK) - 1;
             temp.add(Calendar.DAY_OF_MONTH, -firstDayOfWeek);
 
-            // Fill 6 rows (42 days) to ensure consistent height
             for (int i = 0; i < 42; i++) {
                 days.add((Calendar) temp.clone());
                 temp.add(Calendar.DAY_OF_MONTH, 1);
             }
 
-            DayAdapter adapter = new DayAdapter(context, days, monthCal.get(Calendar.MONTH), selectedDate, (date) -> {
+            DayAdapter adapter = new DayAdapter(context, days, monthCal.get(Calendar.MONTH), selectedDate, eventViewModel, queryExecutor, (date) -> {
                 boolean isCurrentMonth = date.get(Calendar.MONTH) == monthCal.get(Calendar.MONTH);
                 selectedDate = (Calendar) date.clone();
                 listener.onDateSelected(selectedDate, isCurrentMonth);
@@ -96,17 +102,22 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.MonthV
         private final List<Calendar> days;
         private final int currentMonth;
         private final Calendar selectedDate;
+        private final EventViewModel eventViewModel;
+        private final ExecutorService executor;
         private final OnDayClickListener listener;
+        private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
         interface OnDayClickListener {
             void onDayClick(Calendar date);
         }
 
-        DayAdapter(Context context, List<Calendar> days, int currentMonth, Calendar selectedDate, OnDayClickListener listener) {
+        DayAdapter(Context context, List<Calendar> days, int currentMonth, Calendar selectedDate, EventViewModel eventViewModel, ExecutorService executor, OnDayClickListener listener) {
             this.context = context;
             this.days = days;
             this.currentMonth = currentMonth;
             this.selectedDate = selectedDate;
+            this.eventViewModel = eventViewModel;
+            this.executor = executor;
             this.listener = listener;
         }
 
@@ -129,6 +140,31 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.MonthV
             holder.selectionBubble.setVisibility(isSelected ? View.VISIBLE : View.INVISIBLE);
             holder.dayText.setTextColor(isSelected ? context.getColor(R.color.white) : context.getColor(R.color.text_main));
 
+            // Bug 1: Event dots logic
+            holder.eventDot.setVisibility(View.GONE);
+            String dateKey = String.format(Locale.getDefault(), "%04d-%02d-%02d", 
+                    day.get(Calendar.YEAR), day.get(Calendar.MONTH) + 1, day.get(Calendar.DAY_OF_MONTH));
+            
+            executor.execute(() -> {
+                List<EventModel> events = eventViewModel.getEventsByDateSync(dateKey);
+                if (events != null && !events.isEmpty()) {
+                    int highestPriority = -1;
+                    for (EventModel e : events) {
+                        if (e.priority > highestPriority) highestPriority = e.priority;
+                    }
+                    
+                    final int priority = highestPriority;
+                    mainHandler.post(() -> {
+                        holder.eventDot.setVisibility(View.VISIBLE);
+                        int colorRes = R.color.text_hint;
+                        if (priority == 2) colorRes = R.color.error;
+                        else if (priority == 1) colorRes = R.color.accent;
+                        
+                        holder.eventDot.setBackgroundTintList(ColorStateList.valueOf(context.getColor(colorRes)));
+                    });
+                }
+            });
+
             holder.itemView.setOnClickListener(v -> listener.onDayClick(day));
         }
 
@@ -143,10 +179,12 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.MonthV
         class DayViewHolder extends RecyclerView.ViewHolder {
             TextView dayText;
             View selectionBubble;
+            View eventDot;
             DayViewHolder(View v) {
                 super(v);
                 dayText = v.findViewById(R.id.dayText);
                 selectionBubble = v.findViewById(R.id.selectionBubble);
+                eventDot = v.findViewById(R.id.eventDot);
             }
         }
     }

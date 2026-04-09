@@ -21,6 +21,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.calendarapp.databinding.ActivityAddEventBinding;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 
@@ -29,7 +30,7 @@ public class AddEventActivity extends AppCompatActivity {
     private ActivityAddEventBinding binding;
     private EventViewModel eventViewModel;
     private String selectedDate;
-    private String selectedTime = "19:30";
+    private String selectedTime;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,15 +43,19 @@ public class AddEventActivity extends AppCompatActivity {
         eventViewModel = new ViewModelProvider(this).get(EventViewModel.class);
         selectedDate = getIntent().getStringExtra("date");
 
+        setupDateDisplay();
+        setupDefaultTime();
+
         binding.toolbar.setNavigationOnClickListener(v -> onBackPressed());
         binding.reminderGroup.check(R.id.btnNotification);
 
         binding.timeBtn.setOnClickListener(v -> {
             Calendar c = Calendar.getInstance();
+            String[] t = selectedTime.split(":");
             new TimePickerDialog(this, (view, h, m) -> {
                 selectedTime = String.format(Locale.getDefault(), "%02d:%02d", h, m);
                 binding.timeBtn.setText("Time: " + selectedTime);
-            }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), false).show();
+            }, Integer.parseInt(t[0]), Integer.parseInt(t[1]), false).show();
         });
 
         binding.saveBtn.setOnClickListener(v -> {
@@ -60,16 +65,38 @@ public class AddEventActivity extends AppCompatActivity {
                 return;
             }
 
-            // Check Notification Permission right before saving
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                     ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 102);
-                    return; // Stop here, wait for user to grant permission
+                    return;
                 }
             }
 
             saveAndSchedule(title);
         });
+    }
+
+    private void setupDateDisplay() {
+        if (selectedDate != null) {
+            try {
+                String[] d = selectedDate.split("-");
+                Calendar cal = Calendar.getInstance();
+                cal.set(Integer.parseInt(d[0]), Integer.parseInt(d[1]) - 1, Integer.parseInt(d[2]));
+                SimpleDateFormat sdf = new SimpleDateFormat("EEEE, d MMMM yyyy", Locale.getDefault());
+                binding.dateDisplay.setText("Adding event for: " + sdf.format(cal.getTime()));
+                binding.dateDisplay.setVisibility(View.VISIBLE);
+            } catch (Exception e) {
+                binding.dateDisplay.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    private void setupDefaultTime() {
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.HOUR_OF_DAY, 1);
+        cal.set(Calendar.MINUTE, 0);
+        selectedTime = String.format(Locale.getDefault(), "%02d:%02d", cal.get(Calendar.HOUR_OF_DAY), 0);
+        binding.timeBtn.setText("Time: " + selectedTime);
     }
 
     private void saveAndSchedule(String title) {
@@ -80,14 +107,17 @@ public class AddEventActivity extends AppCompatActivity {
         int reminderType = (binding.reminderGroup.getCheckedButtonId() == R.id.btnAlarm) ? 1 : 0;
 
         EventModel event = new EventModel(selectedDate, selectedTime, title, priority, reminderType);
-        eventViewModel.insert(event);
         
-        checkAndScheduleReminder(selectedDate, selectedTime, title, reminderType);
-        finish();
-        overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right);
+        eventViewModel.insert(event, insertedEvent -> {
+            runOnUiThread(() -> {
+                checkAndScheduleReminder(insertedEvent);
+                finish();
+                overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right);
+            });
+        });
     }
 
-    private void checkAndScheduleReminder(String date, String time, String title, int type) {
+    private void checkAndScheduleReminder(EventModel event) {
         AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
@@ -97,13 +127,13 @@ public class AddEventActivity extends AppCompatActivity {
                 return;
             }
         }
-        scheduleReminder(date, time, title, type);
+        scheduleReminder(event);
     }
 
-    private void scheduleReminder(String date, String time, String title, int type) {
+    private void scheduleReminder(EventModel event) {
         try {
-            String[] d = date.split("-");
-            String[] t = time.split(":");
+            String[] d = event.date.split("-");
+            String[] t = event.time.split(":");
 
             Calendar cal = Calendar.getInstance();
             cal.set(Calendar.YEAR, Integer.parseInt(d[0]));
@@ -117,14 +147,14 @@ public class AddEventActivity extends AppCompatActivity {
             if (cal.getTimeInMillis() <= System.currentTimeMillis()) return;
 
             Intent intent = new Intent(this, AlarmReceiver.class);
-            intent.putExtra("title", title);
-            intent.putExtra("date", date);
-            intent.putExtra("time", time);
-            intent.putExtra("reminderType", type);
+            intent.putExtra("title", event.title);
+            intent.putExtra("date", event.date);
+            intent.putExtra("time", event.time);
+            intent.putExtra("reminderType", event.reminderType);
 
             PendingIntent pi = PendingIntent.getBroadcast(
                     this,
-                    (int) System.currentTimeMillis(),
+                    event.id,
                     intent,
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
             );
@@ -132,7 +162,7 @@ public class AddEventActivity extends AppCompatActivity {
             AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
             if (alarmManager != null) {
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), pi);
-                Log.d("CalendarApp", "Alarm/Notification scheduled for: " + cal.getTime());
+                Log.d("CalendarApp", "Alarm/Notification scheduled for: " + cal.getTime() + " with ID: " + event.id);
             }
 
         } catch (Exception e) {

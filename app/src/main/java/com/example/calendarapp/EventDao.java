@@ -13,7 +13,7 @@ import java.util.List;
 public interface EventDao {
 
     @Insert
-    void insert(EventModel event);
+    long insert(EventModel event);
 
     @Update
     void update(EventModel event);
@@ -29,4 +29,7 @@ public interface EventDao {
     
     @Query("SELECT * FROM events WHERE id = :id LIMIT 1")
     EventModel getEventById(int id);
+
+    @Query("SELECT * FROM events WHERE date = :date ORDER BY priority DESC")
+    List<EventModel> getEventsByDateSync(String date);
 }
