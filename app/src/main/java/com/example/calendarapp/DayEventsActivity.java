@@ -1,5 +1,6 @@
 package com.example.calendarapp;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 
@@ -33,8 +34,24 @@ public class DayEventsActivity extends AppCompatActivity {
 
         eventViewModel = new ViewModelProvider(this).get(EventViewModel.class);
         
-        adapter = new EventAdapter(this, new ArrayList<>(), event -> {
-            eventViewModel.delete(event);
+        adapter = new EventAdapter(this, new ArrayList<>(), new EventAdapter.OnEventActionListener() {
+            @Override
+            public void onDelete(EventModel event) {
+                eventViewModel.delete(event);
+            }
+
+            @Override
+            public void onEdit(EventModel event) {
+                Intent i = new Intent(DayEventsActivity.this, EditEventActivity.class);
+                i.putExtra("id", event.id);
+                i.putExtra("date", event.date);
+                i.putExtra("time", event.time);
+                i.putExtra("title", event.title);
+                i.putExtra("priority", event.priority);
+                i.putExtra("reminderType", event.reminderType);
+                startActivity(i);
+                overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+            }
         });
 
         binding.eventList.setAdapter(adapter);

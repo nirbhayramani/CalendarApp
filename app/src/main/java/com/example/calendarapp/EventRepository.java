@@ -77,4 +77,13 @@ public class EventRepository {
     public List<EventModel> getEventsByDateSync(String date) {
         return eventDao.getEventsByDateSync(date);
     }
+
+    /**
+     * FIX 3 - Batch event dot queries
+     * Added synchronous repository method to fetch all events for a month.
+     * This is called by the ViewModel to support batched calendar cell updates.
+     */
+    public List<EventModel> getEventsByMonthSync(String month) {
+        return eventDao.getEventsByMonthSync(month);
+    }
 }

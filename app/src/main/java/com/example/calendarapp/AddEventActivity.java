@@ -2,6 +2,7 @@ package com.example.calendarapp;
 
 import android.Manifest;
 import android.app.AlarmManager;
+import android.app.DatePickerDialog;
 import android.app.PendingIntent;
 import android.app.TimePickerDialog;
 import android.content.Intent;
@@ -31,6 +32,8 @@ public class AddEventActivity extends AppCompatActivity {
     private EventViewModel eventViewModel;
     private String selectedDate;
     private String selectedTime;
+    private final SimpleDateFormat displayFormat = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+    private final SimpleDateFormat dbFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,19 +46,33 @@ public class AddEventActivity extends AppCompatActivity {
         eventViewModel = new ViewModelProvider(this).get(EventViewModel.class);
         selectedDate = getIntent().getStringExtra("date");
 
-        setupDateDisplay();
+        setupDateButton();
         setupDefaultTime();
 
         binding.toolbar.setNavigationOnClickListener(v -> onBackPressed());
         binding.reminderGroup.check(R.id.btnNotification);
 
         binding.timeBtn.setOnClickListener(v -> {
-            Calendar c = Calendar.getInstance();
             String[] t = selectedTime.split(":");
             new TimePickerDialog(this, (view, h, m) -> {
                 selectedTime = String.format(Locale.getDefault(), "%02d:%02d", h, m);
                 binding.timeBtn.setText("Time: " + selectedTime);
             }, Integer.parseInt(t[0]), Integer.parseInt(t[1]), false).show();
+        });
+
+        binding.dateBtn.setOnClickListener(v -> {
+            try {
+                String[] d = selectedDate.split("-");
+                DatePickerDialog dpd = new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
+                    Calendar cal = Calendar.getInstance();
+                    cal.set(year, month, dayOfMonth);
+                    selectedDate = dbFormat.format(cal.getTime());
+                    binding.dateBtn.setText("Date: " + displayFormat.format(cal.getTime()));
+                }, Integer.parseInt(d[0]), Integer.parseInt(d[1]) - 1, Integer.parseInt(d[2]));
+                dpd.show();
+            } catch (Exception e) {
+                Log.e("CalendarApp", "DatePicker error", e);
+            }
         });
 
         binding.saveBtn.setOnClickListener(v -> {
@@ -76,17 +93,15 @@ public class AddEventActivity extends AppCompatActivity {
         });
     }
 
-    private void setupDateDisplay() {
+    private void setupDateButton() {
         if (selectedDate != null) {
             try {
                 String[] d = selectedDate.split("-");
                 Calendar cal = Calendar.getInstance();
                 cal.set(Integer.parseInt(d[0]), Integer.parseInt(d[1]) - 1, Integer.parseInt(d[2]));
-                SimpleDateFormat sdf = new SimpleDateFormat("EEEE, d MMMM yyyy", Locale.getDefault());
-                binding.dateDisplay.setText("Adding event for: " + sdf.format(cal.getTime()));
-                binding.dateDisplay.setVisibility(View.VISIBLE);
+                binding.dateBtn.setText("Date: " + displayFormat.format(cal.getTime()));
             } catch (Exception e) {
-                binding.dateDisplay.setVisibility(View.GONE);
+                binding.dateBtn.setText("Date: Select Date");
             }
         }
     }
@@ -111,6 +126,9 @@ public class AddEventActivity extends AppCompatActivity {
         eventViewModel.insert(event, insertedEvent -> {
             runOnUiThread(() -> {
                 checkAndScheduleReminder(insertedEvent);
+                Intent resultIntent = new Intent();
+                resultIntent.putExtra("date", selectedDate);
+                setResult(RESULT_OK, resultIntent);
                 finish();
                 overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right);
             });

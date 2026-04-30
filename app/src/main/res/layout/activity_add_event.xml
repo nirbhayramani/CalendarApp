@@ -33,19 +33,6 @@
             android:padding="24dp">
 
             <TextView
-                android:id="@+id/dateDisplay"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="16dp"
-                android:background="@color/accent_light"
-                android:textColor="@color/accent"
-                android:textSize="16sp"
-                android:fontFamily="sans-serif-medium"
-                android:gravity="center"
-                android:layout_marginBottom="24dp"
-                android:visibility="gone" />
-
-            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/whats_happening"
@@ -85,6 +72,20 @@
                 android:layout_marginBottom="12dp" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/dateBtn"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:padding="16dp"
+                android:text="Date: Select Date"
+                android:textColor="@color/accent"
+                app:backgroundTint="@color/accent_light"
+                app:cornerRadius="16dp"
+                app:icon="@android:drawable/ic_menu_my_calendar"
+                app:iconTint="@color/accent" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/timeBtn"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="match_parent"
@@ -120,6 +121,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/low_priority"
+                    app:chipBackgroundColor="@color/accent_light"
+                    android:textColor="@color/accent"
                     app:chipCornerRadius="12dp"
                     android:checked="true" />
 
@@ -129,6 +132,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/medium_priority"
+                    app:chipBackgroundColor="@color/accent_light"
+                    android:textColor="@color/accent"
                     app:chipCornerRadius="12dp" />
 
                 <com.google.android.material.chip.Chip
@@ -137,6 +142,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/high_priority"
+                    app:chipBackgroundColor="@color/accent_light"
+                    android:textColor="@color/accent"
                     app:chipCornerRadius="12dp" />
             </com.google.android.material.chip.ChipGroup>
 

@@ -1,12 +1,14 @@
 package com.example.calendarapp;
 
 import android.app.AlarmManager;
+import android.app.DatePickerDialog;
 import android.app.PendingIntent;
 import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
@@ -16,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.calendarapp.databinding.ActivityAddEventBinding;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 
@@ -26,6 +29,8 @@ public class EditEventActivity extends AppCompatActivity {
     private int id;
     private String date;
     private String time;
+    private final SimpleDateFormat displayFormat = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+    private final SimpleDateFormat dbFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
 
     @Override
     protected void onCreate(Bundle b) {
@@ -58,6 +63,8 @@ public class EditEventActivity extends AppCompatActivity {
         binding.titleInput.setText(title);
         binding.timeBtn.setText("Time: " + time);
         binding.saveBtn.setText("Update Event");
+        
+        setupDateButton();
 
         if (priority == 1) binding.priorityGroup.check(R.id.chipMedium);
         else if (priority == 2) binding.priorityGroup.check(R.id.chipHigh);
@@ -72,6 +79,21 @@ public class EditEventActivity extends AppCompatActivity {
                 time = String.format(Locale.getDefault(), "%02d:%02d", h, m);
                 binding.timeBtn.setText("Time: " + time);
             }, Integer.parseInt(t[0]), Integer.parseInt(t[1]), false).show();
+        });
+
+        binding.dateBtn.setOnClickListener(v -> {
+            try {
+                String[] d = date.split("-");
+                DatePickerDialog dpd = new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
+                    Calendar cal = Calendar.getInstance();
+                    cal.set(year, month, dayOfMonth);
+                    date = dbFormat.format(cal.getTime());
+                    binding.dateBtn.setText("Date: " + displayFormat.format(cal.getTime()));
+                }, Integer.parseInt(d[0]), Integer.parseInt(d[1]) - 1, Integer.parseInt(d[2]));
+                dpd.show();
+            } catch (Exception e) {
+                Log.e("CalendarApp", "DatePicker error", e);
+            }
         });
 
         binding.saveBtn.setOnClickListener(v -> {
@@ -91,9 +113,27 @@ public class EditEventActivity extends AppCompatActivity {
             eventViewModel.update(event);
 
             checkAndScheduleReminder(event);
+            
+            Intent resultIntent = new Intent();
+            resultIntent.putExtra("date", date);
+            setResult(RESULT_OK, resultIntent);
+            
             finish();
             overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right);
         });
+    }
+
+    private void setupDateButton() {
+        if (date != null) {
+            try {
+                String[] d = date.split("-");
+                Calendar cal = Calendar.getInstance();
+                cal.set(Integer.parseInt(d[0]), Integer.parseInt(d[1]) - 1, Integer.parseInt(d[2]));
+                binding.dateBtn.setText("Date: " + displayFormat.format(cal.getTime()));
+            } catch (Exception e) {
+                binding.dateBtn.setText("Date: Select Date");
+            }
+        }
     }
 
     private void checkAndScheduleReminder(EventModel event) {
@@ -111,6 +151,9 @@ public class EditEventActivity extends AppCompatActivity {
 
     private void scheduleReminder(EventModel event) {
         try {
+            // Cancel existing alarm first to be explicit as per requirement
+            cancelAlarm(event.id);
+
             String[] d = event.date.split("-");
             String[] t = event.time.split(":");
 
@@ -143,10 +186,28 @@ public class EditEventActivity extends AppCompatActivity {
             AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
             if (alarmManager != null) {
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), pi);
+                Log.d("CalendarApp", "Alarm updated for ID: " + event.id + " to " + cal.getTime());
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e("CalendarApp", "Scheduling error", e);
+        }
+    }
+
+    private void cancelAlarm(int id) {
+        Intent intent = new Intent(this, AlarmReceiver.class);
+        PendingIntent pi = PendingIntent.getBroadcast(
+                this,
+                id,
+                intent,
+                PendingIntent.FLAG_NO_CREATE | PendingIntent.FLAG_IMMUTABLE
+        );
+        if (pi != null) {
+            AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+            if (alarmManager != null) {
+                alarmManager.cancel(pi);
+            }
+            pi.cancel();
         }
     }
 }

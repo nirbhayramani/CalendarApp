@@ -1,51 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="24dp">
 
-    <TextView
-        android:id="@+id/todayYearHeader"
+    <!-- Top Section: Selected Year Display / Input -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:padding="12dp"
-        android:textColor="@color/accent"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true" />
+        android:layout_marginBottom="24dp">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/yearInputLayout"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        android:layout_margin="8dp"
-        app:boxCornerRadiusBottomEnd="12dp"
-        app:boxCornerRadiusBottomStart="12dp"
-        app:boxCornerRadiusTopEnd="12dp"
-        app:boxCornerRadiusTopStart="12dp">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/yearEditText"
+        <TextView
+            android:id="@+id/selectedYearDisplay"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="number"
-            android:hint="Enter Year"
-            android:maxLength="4" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:gravity="center"
+            android:textColor="@color/accent"
+            android:textSize="32sp"
+            android:fontFamily="sans-serif-bold"
+            android:padding="8dp"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            tools:text="2026" />
 
+        <EditText
+            android:id="@+id/yearInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:textColor="@color/accent"
+            android:textSize="32sp"
+            android:fontFamily="sans-serif-bold"
+            android:inputType="number"
+            android:maxLength="4"
+            android:visibility="gone"
+            android:imeOptions="actionDone"
+            android:background="@null" />
+    </FrameLayout>
+
+    <!-- Bottom Section: Year List -->
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/yearGrid"
+        android:id="@+id/yearList"
         android:layout_width="match_parent"
         android:layout_height="300dp"
-        android:layout_marginTop="8dp"
-        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-        app:spanCount="3" />
+        android:overScrollMode="never" />
 
 </LinearLayout>

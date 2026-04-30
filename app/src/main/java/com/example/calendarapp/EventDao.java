@@ -32,4 +32,12 @@ public interface EventDao {
 
     @Query("SELECT * FROM events WHERE date = :date ORDER BY priority DESC")
     List<EventModel> getEventsByDateSync(String date);
+
+    /**
+     * FIX 3 - Batch event dot queries
+     * Added synchronous method to fetch all events for a specific month (yyyy-MM)
+     * This reduces DB overhead by replacing 42 individual queries with one batch query.
+     */
+    @Query("SELECT * FROM events WHERE date LIKE :month || '%'")
+    List<EventModel> getEventsByMonthSync(String month);
 }

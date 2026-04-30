@@ -38,4 +38,13 @@ public class EventViewModel extends AndroidViewModel {
     public List<EventModel> getEventsByDateSync(String date) {
         return repository.getEventsByDateSync(date);
     }
+
+    /**
+     * FIX 3 - Batch event dot queries
+     * Added synchronous ViewModel method to fetch all events for a month.
+     * This is utilized by the CalendarAdapter to fetch month data in a single background task.
+     */
+    public List<EventModel> getEventsByMonthSync(String month) {
+        return repository.getEventsByMonthSync(month);
+    }
 }

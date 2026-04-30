@@ -22,12 +22,15 @@ import java.util.concurrent.Executors;
 public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.MonthViewHolder> {
 
     private final Context context;
-    private final Calendar baseCalendar;
     private final OnDateSelectedListener listener;
     private final EventViewModel eventViewModel;
-    public static final int START_POSITION = 500000; 
     private Calendar selectedDate;
     private final ExecutorService queryExecutor = Executors.newSingleThreadExecutor();
+
+    // Fixed Range: 1900 to 2299 (exactly 400 years)
+    public static final int START_YEAR = 1900;
+    public static final int END_YEAR = 2299;
+    public static final int TOTAL_MONTHS = (END_YEAR - START_YEAR + 1) * 12;
 
     public interface OnDateSelectedListener {
         void onDateSelected(Calendar calendar, boolean isCurrentMonth);
@@ -35,8 +38,6 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.MonthV
 
     public CalendarAdapter(Context context, Calendar selectedDate, EventViewModel eventViewModel, OnDateSelectedListener listener) {
         this.context = context;
-        this.baseCalendar = (Calendar) Calendar.getInstance().clone();
-        this.baseCalendar.set(Calendar.DAY_OF_MONTH, 1);
         this.selectedDate = (Calendar) selectedDate.clone();
         this.eventViewModel = eventViewModel;
         this.listener = listener;
@@ -56,14 +57,19 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.MonthV
 
     @Override
     public void onBindViewHolder(@NonNull MonthViewHolder holder, int position) {
-        Calendar monthCal = (Calendar) baseCalendar.clone();
-        monthCal.add(Calendar.MONTH, position - START_POSITION);
+        // Position mapping: 0 = Jan 1900, 4799 = Dec 2299
+        Calendar monthCal = Calendar.getInstance();
+        int year = START_YEAR + (position / 12);
+        int month = position % 12;
+        monthCal.set(Calendar.YEAR, year);
+        monthCal.set(Calendar.MONTH, month);
+        monthCal.set(Calendar.DAY_OF_MONTH, 1);
         holder.bind(monthCal);
     }
 
     @Override
     public int getItemCount() {
-        return 1000000;
+        return TOTAL_MONTHS;
     }
 
     class MonthViewHolder extends RecyclerView.ViewHolder {
@@ -71,7 +77,7 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.MonthV
 
         public MonthViewHolder(@NonNull View itemView) {
             super(itemView);
-            monthGrid = itemView.findViewById(R.id.monthGrid);
+            monthGrid = (RecyclerView) itemView;
         }
 
         void bind(Calendar monthCal) {
@@ -79,9 +85,11 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.MonthV
             Calendar temp = (Calendar) monthCal.clone();
             temp.set(Calendar.DAY_OF_MONTH, 1);
             
+            // Calculate padding for start of month
             int firstDayOfWeek = temp.get(Calendar.DAY_OF_WEEK) - 1;
             temp.add(Calendar.DAY_OF_MONTH, -firstDayOfWeek);
 
+            // Fill 42 days (6 rows x 7 columns) to ensure consistent height
             for (int i = 0; i < 42; i++) {
                 days.add((Calendar) temp.clone());
                 temp.add(Calendar.DAY_OF_MONTH, 1);
@@ -140,7 +148,7 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.MonthV
             holder.selectionBubble.setVisibility(isSelected ? View.VISIBLE : View.INVISIBLE);
             holder.dayText.setTextColor(isSelected ? context.getColor(R.color.white) : context.getColor(R.color.text_main));
 
-            // Bug 1: Event dots logic
+            // Event dots logic
             holder.eventDot.setVisibility(View.GONE);
             String dateKey = String.format(Locale.getDefault(), "%04d-%02d-%02d", 
                     day.get(Calendar.YEAR), day.get(Calendar.MONTH) + 1, day.get(Calendar.DAY_OF_MONTH));
